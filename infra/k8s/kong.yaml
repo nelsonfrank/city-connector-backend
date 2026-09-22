@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+data:
+  kong.yml: |
+    _format_version: "3.0"
+    
+    # TODO: Client authentication strategy (e.g. key-auth or JWT) is deferred 
+    # until finalized. Add authentication plugin here.
+    
+    services:
+      - name: routing-service
+        url: http://routing:8081/healthz
+        routes:
+          - name: journey-route
+            paths:
+              - /journey
+            strip_path: true
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 5
+              policy: local
+    
+      - name: search-service
+        url: http://search:8082/healthz
+        routes:
+          - name: stops-route
+            paths:
+              - /stops
+            strip_path: true
+          - name: search-route
+            paths:
+              - /search
+            strip_path: true
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 20
+              policy: local
+    
+      - name: realtime-service
+        url: http://realtime:8083/healthz
+        routes:
+          - name: realtime-route
+            paths:
+              - /realtime
+            strip_path: true
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 20
+              policy: local
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      containers:
+        - name: kong
+          image: kong:3.4-ubuntu
+          env:
+            - name: KONG_DATABASE
+              value: "off"
+            - name: KONG_DECLARATIVE_CONFIG
+              value: "/kong/declarative/kong.yml"
+            - name: KONG_PROXY_ACCESS_LOG
+              value: "/dev/stdout"
+            - name: KONG_ADMIN_ACCESS_LOG
+              value: "/dev/stdout"
+            - name: KONG_PROXY_ERROR_LOG
+              value: "/dev/stderr"
+            - name: KONG_ADMIN_ERROR_LOG
+              value: "/dev/stderr"
+            - name: KONG_ADMIN_LISTEN
+              value: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
+          ports:
+            - containerPort: 8000
+            - containerPort: 8001
+          volumeMounts:
+            - name: kong-declarative-config
+              mountPath: /kong/declarative
+      volumes:
+        - name: kong-declarative-config
+          configMap:
+            name: kong-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong
+spec:
+  type: NodePort
+  selector:
+    app: kong
+  ports:
+    - name: proxy
+      port: 8000
+      targetPort: 8000
+      nodePort: 30000
+    - name: admin
+      port: 8001
+      targetPort: 8001
+      nodePort: 30001

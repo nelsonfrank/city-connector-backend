@@ -12,10 +12,13 @@ city-connector-backend/
 │   ├── realtime/    # Live vehicle positions and delay-adjusted ETAs (Go)
 │   └── ingestion/   # Ingests GTFS static and GTFS-RT feeds per agency (Python)
 ├── gateway/         # API Gateway configuration (Kong)
-├── infra/           # Infrastructure as code and deployment manifests (Docker Compose, K8s)
+├── infra/
+│   ├── docker/      # Docker Compose for local docker-based development
+│   └── k8s/         # Kubernetes manifests for cluster deployment
 ├── .github/         # CI/CD workflows
 ├── docs/            # Architecture documentation (SAD, ADRs, C4 diagrams)
 ├── Makefile         # Build and run automation
+├── Tiltfile         # Tilt configuration for local Kubernetes development
 └── README.md
 ```
 
@@ -45,7 +48,40 @@ To verify Kong is routing correctly, curl the following endpoints:
 - `curl localhost:8000/search`
 - `curl localhost:8000/realtime/vehicles`
 
-These should return `200 OK` from their respective `/healthz`-backed stubs. Rate limiting is active (e.g. 5/min on `/journey`, 20/min on others), so hitting them rapidly will yield a `429 Too Many Requests`.
+These should return `200 OK` from the Go stub services. Rate limiting is active (e.g. 5/min on `/journey`, 20/min on others), so hitting them rapidly will yield a `429 Too Many Requests`.
+
+## Local Kubernetes Development (Tilt)
+
+For local Kubernetes development, this project uses [Tilt](https://tilt.dev). Tilt watches your code, rebuilds Docker images automatically, and syncs them into your local cluster (Minikube, Kind, etc.).
+
+**Prerequisites:** `kubectl`, `tilt`, and a running local cluster (e.g. `minikube start`).
+
+```bash
+# From the repository root
+make tilt-up
+# or simply:
+tilt up
+```
+
+Tilt will:
+1. Build `routing:latest`, `search:latest`, `realtime:latest`, and `ingestion:latest` images locally.
+2. Apply all manifests in `infra/k8s/`.
+3. Port-forward Kong proxy → `localhost:8000`, Admin → `localhost:8001`.
+4. Watch for file changes and live-update containers on save.
+
+**Verify routes work the same as docker-compose:**
+```bash
+curl localhost:8000/journey
+curl localhost:8000/stops/nearby
+curl localhost:8000/realtime/vehicles
+```
+
+To apply or tear down the raw Kubernetes manifests without Tilt:
+
+```bash
+make k8s-apply    # kubectl apply -f infra/k8s/
+make k8s-delete   # kubectl delete -f infra/k8s/
+```
 
 ## Documentation & Architecture
 
@@ -63,5 +99,6 @@ Review these documents before assuming conventions here are arbitrary.
 2. **Dockerfile:** Add a `Dockerfile` inside the service directory.
 3. **Gateway Route:** Add the new service and route to `gateway/kong.yml`.
 4. **Compose:** Add the service block to `infra/docker/docker-compose.yml`, building from its context.
-5. **CI:** Add a build job to `.github/workflows/go-services.yml` or create a new workflow file if using a different language.
-6. **Docs:** Update this `README.md` and the C4 diagrams in `/docs` to reflect the new component.
+5. **Kubernetes:** Add `infra/k8s/<service>.yaml` with a `Deployment` and `Service`. Add a `docker_build()` and optional `k8s_resource()` call to the `Tiltfile`.
+6. **CI:** Add a build job to `.github/workflows/go-services.yml` or create a new workflow file if using a different language.
+7. **Docs:** Update this `README.md` and the C4 diagrams in `/docs` to reflect the new component.

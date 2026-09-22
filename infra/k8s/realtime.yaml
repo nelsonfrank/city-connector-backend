@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realtime
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: realtime
+  template:
+    metadata:
+      labels:
+        app: realtime
+    spec:
+      containers:
+        - name: realtime
+          image: nelsonfrank/realtime:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: realtime
+spec:
+  selector:
+    app: realtime
+  ports:
+    - port: 8083
+      targetPort: 8083
