@@ -1,0 +1,41 @@
+name: Go Services CI
+
+on:
+  push:
+    paths:
+      - 'services/routing/**'
+      - 'services/search/**'
+      - 'services/realtime/**'
+  pull_request:
+    paths:
+      - 'services/routing/**'
+      - 'services/search/**'
+      - 'services/realtime/**'
+
+jobs:
+  build-routing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - run: cd services/routing && go build ./...
+
+  build-search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - run: cd services/search && go build ./...
+
+  build-realtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - run: cd services/realtime && go build ./...

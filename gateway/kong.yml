@@ -1,0 +1,48 @@
+_format_version: "3.0"
+
+# TODO: Client authentication strategy (e.g. key-auth or JWT) is deferred 
+# until finalized. Add authentication plugin here.
+
+services:
+  - name: routing-service
+    url: http://routing:8081/healthz
+    routes:
+      - name: journey-route
+        paths:
+          - /journey
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 5
+          policy: local
+
+  - name: search-service
+    url: http://search:8082/healthz
+    routes:
+      - name: stops-route
+        paths:
+          - /stops
+        strip_path: true
+      - name: search-route
+        paths:
+          - /search
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 20
+          policy: local
+
+  - name: realtime-service
+    url: http://realtime:8083/healthz
+    routes:
+      - name: realtime-route
+        paths:
+          - /realtime
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 20
+          policy: local

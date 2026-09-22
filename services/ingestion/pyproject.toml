@@ -1,0 +1,11 @@
+[project]
+name = "ingestion"
+version = "0.1.0"
+description = "Ingestion pipeline for GTFS static and GTFS-RT feeds."
+dependencies = [
+    "pandas",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

@@ -1,0 +1,20 @@
+# Go build artifacts
+/services/routing/routing
+/services/search/search
+/services/realtime/realtime
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+
+# Local Volumes
+/infra/docker/.data/
+
+# OS Files
+.DS_Store

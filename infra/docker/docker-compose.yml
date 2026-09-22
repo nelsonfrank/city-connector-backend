@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: transit
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  kong:
+    image: kong:3.4-ubuntu
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8444 ssl
+    volumes:
+      - ../../gateway/kong.yml:/kong/declarative/kong.yml
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    depends_on:
+      - routing
+      - search
+      - realtime
+
+  routing:
+    build:
+      context: ../../services/routing
+    ports:
+      - "8081:8081"
+
+  search:
+    build:
+      context: ../../services/search
+    ports:
+      - "8082:8082"
+
+  realtime:
+    build:
+      context: ../../services/realtime
+    ports:
+      - "8083:8083"
+
+  ingestion:
+    build:
+      context: ../../services/ingestion
+    # Ingestion is a batch job/worker, no exposed ports, exits immediately here.
+    command: ["python", "-c", "print('Ingestion job complete.')"]

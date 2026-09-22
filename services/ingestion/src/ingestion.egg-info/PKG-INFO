@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: ingestion
+Version: 0.1.0
+Summary: Ingestion pipeline for GTFS static and GTFS-RT feeds.
+Requires-Dist: pandas

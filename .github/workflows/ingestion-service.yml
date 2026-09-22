@@ -1,0 +1,19 @@
+name: Ingestion Service CI
+
+on:
+  push:
+    paths:
+      - 'services/ingestion/**'
+  pull_request:
+    paths:
+      - 'services/ingestion/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: cd services/ingestion && pip install -e .

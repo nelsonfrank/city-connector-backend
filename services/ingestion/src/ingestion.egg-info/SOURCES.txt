@@ -1,0 +1,9 @@
+pyproject.toml
+src/ingestion/__init__.py
+src/ingestion.egg-info/PKG-INFO
+src/ingestion.egg-info/SOURCES.txt
+src/ingestion.egg-info/dependency_links.txt
+src/ingestion.egg-info/requires.txt
+src/ingestion.egg-info/top_level.txt
+src/ingestion/static/__init__.py
+src/ingestion/validation/__init__.py
