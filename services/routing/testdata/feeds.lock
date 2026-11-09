@@ -1,0 +1,18 @@
+# External GTFS Feed Snapshots Registry
+
+This lockfile pins external GTFS archive snapshots used for golden regression testing and benchmarks.
+Run `make fetch-feeds` to download or update archives into `testdata/feeds/`.
+
+## Pinned Feeds
+
+### MBTA Boston (Primary Real-World Feed)
+- **URL**: https://cdn.mbta.com/MBTA_GTFS.zip
+- **Version/Date**: 2026-11-01
+- **File**: services/routing/testdata/feeds/mbta_gtfs.zip
+- **License**: MassDOT Developers License Agreement (Free, commercial use OK with attribution)
+
+### Sample Open Source GTFS Feed
+- **URL**: https://github.com/public-transport/sample-gtfs-feed/archive/refs/heads/master.zip
+- **Version/Date**: main
+- **File**: services/routing/testdata/feeds/sample_gtfs.zip
+- **License**: ISC License

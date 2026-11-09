@@ -1,0 +1,7 @@
+stop_id,stop_name,stop_lat,stop_lon
+STOP_NORTH,North Terminal,42.3650,-71.0600
+STOP_CENTRAL,Central Station,42.3600,-71.0580
+STOP_SOUTH,South Terminal,42.3520,-71.0550
+STOP_WEST,West Plaza,42.3580,-71.0700
+STOP_EAST,East Harbor,42.3590,-71.0450
+STOP_AIRPORT,City Airport,42.3670,-71.0200

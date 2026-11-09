@@ -1,4 +1,4 @@
-.PHONY: build test up down tilt-up k8s-apply k8s-delete
+.PHONY: build test up down tilt-up k8s-apply k8s-delete fetch-feeds
 
 build:
 	cd services/routing && go build ./...
@@ -6,9 +6,14 @@ build:
 	cd services/realtime && go build ./...
 
 test: build
-	cd services/routing && go test ./...
+	cd services/routing && go test -race ./...
 	cd services/search && go test ./...
 	cd services/realtime && go test ./...
+
+fetch-feeds:
+	mkdir -p services/routing/testdata/feeds
+	@echo "Fetching MBTA GTFS feed..."
+	curl -fSL -o services/routing/testdata/feeds/mbta_gtfs.zip https://cdn.mbta.com/MBTA_GTFS.zip || echo "Note: Network access required to download MBTA feed"
 
 up:
 	cd infra/docker && docker compose up --build -d
