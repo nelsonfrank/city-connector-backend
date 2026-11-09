@@ -108,3 +108,4 @@ func TestJourneyValidationErrors(t *testing.T) {
 		t.Errorf("out of range date = %d, body = %s", rec.Code, rec.Body)
 	}
 }
+

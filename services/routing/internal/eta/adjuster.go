@@ -21,3 +21,4 @@ func NewNoopAdjuster() *NoopAdjuster {
 func (a *NoopAdjuster) Adjust(ctx context.Context, journeys []raptor.Journey) []raptor.Journey {
 	return journeys
 }
+

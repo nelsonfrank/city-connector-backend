@@ -341,3 +341,4 @@ func hashItinerary(legs []Leg) string {
 	}
 	return "itin_" + hex.EncodeToString(h.Sum(nil))[:8]
 }
+
