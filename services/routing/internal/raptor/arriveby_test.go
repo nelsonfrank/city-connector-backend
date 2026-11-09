@@ -50,3 +50,4 @@ func TestGoldenArriveByRoute(t *testing.T) {
 		t.Errorf("arriveAt = %q, want %q", best.ArriveAt, expectedArrival)
 	}
 }
+
