@@ -232,3 +232,4 @@ func (s *PostgresSource) Load(ctx context.Context) (*RawFeed, error) {
 
 	return feed, nil
 }
+

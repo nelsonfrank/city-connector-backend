@@ -7,3 +7,4 @@ type Source interface {
 	Load(ctx context.Context) (*RawFeed, error)
 	ActiveVersion(ctx context.Context) (string, error)
 }
+

@@ -26,3 +26,4 @@ Static schedule updates must not cause read downtime or inconsistent queries (NF
 
 ## 3. Schema Definitions
 See full initialization DDL in [`infra/docker/postgres-init/01-gtfs-schema.sql`](../../infra/docker/postgres-init/01-gtfs-schema.sql).
+

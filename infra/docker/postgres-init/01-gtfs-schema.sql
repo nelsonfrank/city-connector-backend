@@ -122,3 +122,4 @@ CREATE TABLE IF NOT EXISTS gtfs_frequencies (
     exact_times INTEGER DEFAULT 0,
     PRIMARY KEY (feed_version_id, trip_id, start_time)
 );
+

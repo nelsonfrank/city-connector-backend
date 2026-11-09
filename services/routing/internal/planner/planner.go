@@ -81,9 +81,10 @@ type Response struct {
 
 // Planner coordinates endpoint resolution, RAPTOR search, ranking, and response formatting.
 type Planner struct {
-	cfg      config.Config
-	engine   *raptor.Engine
-	adjuster eta.Adjuster
+	cfg        config.Config
+	engine     *raptor.Engine
+	revEngine  *raptor.ReverseEngine
+	adjuster   eta.Adjuster
 }
 
 func NewPlanner(cfg config.Config, engine *raptor.Engine, adjuster eta.Adjuster) *Planner {
@@ -91,9 +92,10 @@ func NewPlanner(cfg config.Config, engine *raptor.Engine, adjuster eta.Adjuster)
 		adjuster = eta.NewNoopAdjuster()
 	}
 	return &Planner{
-		cfg:      cfg,
-		engine:   engine,
-		adjuster: adjuster,
+		cfg:        cfg,
+		engine:     engine,
+		revEngine:  raptor.NewReverseEngine(),
+		adjuster:   adjuster,
 	}
 }
 
@@ -147,7 +149,7 @@ func (p *Planner) Plan(ctx context.Context, tt *timetable.Timetable, req Request
 		return resp, nil
 	}
 
-	// 3. Execute RAPTOR Engine
+	// 3. Execute RAPTOR Engine (Forward or Reverse)
 	q := raptor.Query{
 		AccessStops:  accessStops,
 		EgressStops:  egressStops,
@@ -156,7 +158,13 @@ func (p *Planner) Plan(ctx context.Context, tt *timetable.Timetable, req Request
 		MaxTransfers: req.MaxTransfers,
 	}
 
-	rawJourneys := p.engine.Route(ctx, tt, q)
+	var rawJourneys []raptor.Journey
+	if req.ArriveBy {
+		rawJourneys = p.revEngine.RouteReverse(ctx, tt, q)
+	} else {
+		rawJourneys = p.engine.Route(ctx, tt, q)
+	}
+
 	if len(rawJourneys) == 0 {
 		return resp, nil
 	}
