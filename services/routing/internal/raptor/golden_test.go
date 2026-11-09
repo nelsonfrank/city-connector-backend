@@ -19,7 +19,7 @@ func loadGoldenTimetable(t *testing.T) *timetable.Timetable {
 		Path:          feedPath,
 		DefaultAgency: "DEMO",
 	}
-	raw, err := src.Load()
+	raw, err := src.Load(context.Background())
 	if err != nil {
 		t.Fatalf("load sample feed: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestGoldenTransferRoute(t *testing.T) {
 func BenchmarkGoldenJourneySearch(b *testing.B) {
 	feedPath := filepath.Join("..", "..", "testdata", "sample-feed")
 	src := &timetable.GTFSZipSource{Path: feedPath, DefaultAgency: "DEMO"}
-	raw, _ := src.Load()
+	raw, _ := src.Load(context.Background())
 	builder := timetable.NewBuilder(timetable.DefaultBuilderConfig())
 	tt, _ := builder.Build(raw)
 

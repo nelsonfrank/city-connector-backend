@@ -3,6 +3,7 @@ package timetable
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -20,7 +21,7 @@ type GTFSZipSource struct {
 	DefaultAgency  string // Prefix to prepend if not already namespaced
 }
 
-func (s *GTFSZipSource) Load() (*RawFeed, error) {
+func (s *GTFSZipSource) Load(ctx context.Context) (*RawFeed, error) {
 	fi, err := os.Stat(s.Path)
 	if err != nil {
 		return nil, fmt.Errorf("gtfs source: %w", err)
@@ -34,6 +35,14 @@ func (s *GTFSZipSource) Load() (*RawFeed, error) {
 		return s.loadDir(feed)
 	}
 	return s.loadZip(feed)
+}
+
+func (s *GTFSZipSource) ActiveVersion(ctx context.Context) (string, error) {
+	fi, err := os.Stat(s.Path)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s_%d", filepath.Base(s.Path), fi.ModTime().Unix()), nil
 }
 
 func (s *GTFSZipSource) loadZip(feed *RawFeed) (*RawFeed, error) {

@@ -22,6 +22,7 @@ import (
 	"github.com/city-connector-backend/routing/internal/planner"
 	"github.com/city-connector-backend/routing/internal/raptor"
 	"github.com/city-connector-backend/routing/internal/timetable"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -49,20 +50,31 @@ func run() error {
 	adjuster := eta.NewNoopAdjuster()
 	pl := planner.NewPlanner(cfg, engine, adjuster)
 
-	// If ROUTING_SOURCE=gtfszip and a path is provided, load immediately
-	if cfg.Source == config.SourceGTFSZip && cfg.GTFSPath != "" {
-		src := &timetable.GTFSZipSource{Path: cfg.GTFSPath}
+	// Configure static data source: Postgres vs GTFSZip
+	var src timetable.Source
+	if cfg.Source == config.SourcePostgres && cfg.DatabaseURL != "" {
+		pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+		if err != nil {
+			log.Error("failed connecting to postgres", "err", err)
+		} else {
+			defer pool.Close()
+			src = timetable.NewPostgresSource(pool)
+		}
+	} else if cfg.Source == config.SourceGTFSZip && cfg.GTFSPath != "" {
+		src = &timetable.GTFSZipSource{Path: cfg.GTFSPath}
+	}
+
+	if src != nil {
 		bldr := timetable.NewBuilder(timetable.BuilderConfig{
 			WalkSpeedMPS:      cfg.WalkSpeedMPS,
 			MaxTransferMeters: cfg.MaxTransferMeters,
 			MinTransferSecs:   cfg.MinTransferSecs,
 		})
 		watcher := timetable.NewWatcher(src, bldr, store, cfg.TimetablePollInterval, log)
-		if err := watcher.StartInitialLoad(); err != nil {
-			log.Warn("initial gtfs load failed", "err", err)
-		} else {
-			go watcher.Run(ctx)
+		if err := watcher.StartInitialLoad(ctx); err != nil {
+			log.Warn("initial static feed load failed (will retry in background)", "err", err)
 		}
+		go watcher.Run(ctx)
 	}
 
 	srv := &http.Server{

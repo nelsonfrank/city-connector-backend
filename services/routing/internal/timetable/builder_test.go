@@ -1,6 +1,7 @@
 package timetable
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,7 +43,7 @@ func TestBuilderFromDir(t *testing.T) {
 	dir := createSampleGTFSDir(t)
 	src := &GTFSZipSource{Path: dir, DefaultAgency: "TEST"}
 
-	raw, err := src.Load()
+	raw, err := src.Load(context.Background())
 	if err != nil {
 		t.Fatalf("load raw feed: %v", err)
 	}

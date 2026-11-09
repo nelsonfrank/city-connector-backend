@@ -8,14 +8,14 @@ import (
 
 // Watcher periodically checks the static feed source and triggers hot-swaps on version updates.
 type Watcher struct {
-	source   *GTFSZipSource
+	source   Source
 	builder  *Builder
 	store    *Store
 	interval time.Duration
 	log      *slog.Logger
 }
 
-func NewWatcher(src *GTFSZipSource, builder *Builder, store *Store, interval time.Duration, log *slog.Logger) *Watcher {
+func NewWatcher(src Source, builder *Builder, store *Store, interval time.Duration, log *slog.Logger) *Watcher {
 	return &Watcher{
 		source:   src,
 		builder:  builder,
@@ -26,8 +26,8 @@ func NewWatcher(src *GTFSZipSource, builder *Builder, store *Store, interval tim
 }
 
 // StartInitialLoad synchronously performs the first load so readiness gates are passed.
-func (w *Watcher) StartInitialLoad() error {
-	raw, err := w.source.Load()
+func (w *Watcher) StartInitialLoad(ctx context.Context) error {
+	raw, err := w.source.Load(ctx)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (w *Watcher) StartInitialLoad() error {
 	return nil
 }
 
-// Run starts the background watcher loop.
+// Run starts the background watcher loop for automatic blue-green timetable updates.
 func (w *Watcher) Run(ctx context.Context) {
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
@@ -55,8 +55,40 @@ func (w *Watcher) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// For GTFSZipSource, we can re-evaluate on version change or modtime
-			// Future PostgresSource checks active version in feed_versions
+			current := w.store.Current()
+			currentVersion := ""
+			if current != nil {
+				currentVersion = current.Version
+			}
+
+			activeVersion, err := w.source.ActiveVersion(ctx)
+			if err != nil {
+				w.log.Warn("check active feed version failed", "err", err)
+				continue
+			}
+
+			if activeVersion != "" && activeVersion != currentVersion {
+				w.log.Info("new static feed version detected, building timetable",
+					"current", currentVersion,
+					"new", activeVersion,
+				)
+				raw, err := w.source.Load(ctx)
+				if err != nil {
+					w.log.Error("failed loading new feed version", "err", err)
+					continue
+				}
+				newTT, err := w.builder.Build(raw)
+				if err != nil {
+					w.log.Error("failed compiling new timetable, keeping old version", "err", err)
+					continue
+				}
+				w.store.Swap(newTT)
+				w.log.Info("timetable hot-swapped successfully",
+					"version", newTT.Version,
+					"stops", len(newTT.Stops),
+					"trips", len(newTT.Trips),
+				)
+			}
 		}
 	}
 }

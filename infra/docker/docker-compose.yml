@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: transit
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
 
