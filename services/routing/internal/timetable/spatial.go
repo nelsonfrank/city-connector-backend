@@ -74,3 +74,4 @@ func (g *SpatialGrid) FindNearby(lat, lon, maxRadiusMeters float64) []StopCandid
 
 	return candidates
 }
+

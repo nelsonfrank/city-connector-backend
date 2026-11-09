@@ -86,3 +86,4 @@ type RawFrequency struct {
 	HeadwaySecs uint32
 	ExactTimes  int // 0 = frequency based, 1 = schedule based
 }
+

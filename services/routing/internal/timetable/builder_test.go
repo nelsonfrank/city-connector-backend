@@ -83,3 +83,4 @@ func TestBuilderFromDir(t *testing.T) {
 		t.Errorf("expected nearby stops around S1, got %d", len(nearby))
 	}
 }
+

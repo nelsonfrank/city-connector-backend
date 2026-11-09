@@ -447,3 +447,4 @@ func (s *GTFSZipSource) parseFrequencies(feed *RawFeed, r io.Reader) error {
 	}
 	return nil
 }
+
