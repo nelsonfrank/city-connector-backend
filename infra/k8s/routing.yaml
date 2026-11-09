@@ -18,6 +18,38 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
+          env:
+            - name: PORT
+              value: "8081"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: ROUTING_SOURCE
+              value: "postgres"
+            - name: DATABASE_URL
+              value: "postgres://user:password@postgres:5432/transit?sslmode=disable"
+            - name: TIMETABLE_POLL_INTERVAL
+              value: "60s"
+          # Liveness: process is up. Readiness: an in-memory timetable is loaded
+          # (pods must not receive /journey traffic before that, see SAD §6.2).
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            periodSeconds: 5
+            failureThreshold: 3
+          # Memory sized for ~2 timetable versions held during a hot swap
+          # (plan §3.2). Revisit with real feed measurements (roadmap 4.5).
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              memory: "512Mi"
 ---
 apiVersion: v1
 kind: Service

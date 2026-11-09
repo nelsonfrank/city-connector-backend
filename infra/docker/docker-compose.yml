@@ -38,8 +38,16 @@ services:
   routing:
     build:
       context: ../../services/routing
+    environment:
+      PORT: "8081"
+      LOG_LEVEL: info
+      ROUTING_SOURCE: postgres
+      DATABASE_URL: postgres://user:password@postgres:5432/transit?sslmode=disable
+      TIMETABLE_POLL_INTERVAL: 60s
     ports:
       - "8081:8081"
+    depends_on:
+      - postgres
 
   search:
     build:

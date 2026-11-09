@@ -3,14 +3,21 @@ _format_version: "3.0"
 # TODO: Client authentication strategy (e.g. key-auth or JWT) is deferred 
 # until finalized. Add authentication plugin here.
 
+# Upstream URLs point at the service root and routes keep their path
+# (strip_path: false), so e.g. GET /journey?from=..&to=.. reaches the
+# routing service as GET /journey?from=..&to=.. . Health endpoints
+# (/healthz, /readyz) are intentionally not exposed through the gateway.
+
 services:
   - name: routing-service
-    url: http://routing:8081/healthz
+    url: http://routing:8081
     routes:
       - name: journey-route
         paths:
           - /journey
-        strip_path: true
+        methods:
+          - GET
+        strip_path: false
     plugins:
       - name: rate-limiting
         config:
@@ -18,16 +25,16 @@ services:
           policy: local
 
   - name: search-service
-    url: http://search:8082/healthz
+    url: http://search:8082
     routes:
       - name: stops-route
         paths:
           - /stops
-        strip_path: true
+        strip_path: false
       - name: search-route
         paths:
           - /search
-        strip_path: true
+        strip_path: false
     plugins:
       - name: rate-limiting
         config:
@@ -35,12 +42,12 @@ services:
           policy: local
 
   - name: realtime-service
-    url: http://realtime:8083/healthz
+    url: http://realtime:8083
     routes:
       - name: realtime-route
         paths:
           - /realtime
-        strip_path: true
+        strip_path: false
     plugins:
       - name: rate-limiting
         config:

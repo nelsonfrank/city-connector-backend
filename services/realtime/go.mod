@@ -1,3 +1,3 @@
 module github.com/city-connector-backend/realtime
 
-go 1.21
+go 1.22
