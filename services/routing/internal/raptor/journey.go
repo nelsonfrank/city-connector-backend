@@ -64,3 +64,4 @@ type Query struct {
 	ServiceDay   gtfs.Date
 	MaxTransfers int
 }
+

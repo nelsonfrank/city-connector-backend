@@ -126,3 +126,4 @@ func (ws *Workspace) GetLabel(round int, s timetable.StopIdx) *Label {
 func (ws *Workspace) SetLabel(round int, s timetable.StopIdx, l Label) {
 	ws.labels[round*ws.NumStops+int(s)] = l
 }
+

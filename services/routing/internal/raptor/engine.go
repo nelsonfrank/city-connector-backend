@@ -382,3 +382,4 @@ func (e *Engine) backtrack(tt *timetable.Timetable, ws *Workspace, q Query, roun
 		Legs:            legs,
 	}
 }
+

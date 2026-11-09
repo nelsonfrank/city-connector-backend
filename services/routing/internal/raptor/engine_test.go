@@ -131,3 +131,4 @@ func TestRaptorTransferJourney(t *testing.T) {
 		t.Fatalf("expected at least access, 2 transit legs, and egress; got %d legs", len(jn.Legs))
 	}
 }
+
