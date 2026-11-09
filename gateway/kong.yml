@@ -18,6 +18,12 @@ services:
         methods:
           - GET
         strip_path: false
+      - name: routing-docs-route
+        paths:
+          - /docs/routing
+        methods:
+          - GET
+        strip_path: true
     plugins:
       - name: rate-limiting
         config:

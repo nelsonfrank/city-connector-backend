@@ -55,6 +55,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("GET /readyz", s.handleReadyz)
 	mux.Handle("GET /metrics", s.metrics.Handler())
+
+	// Swagger / OpenAPI documentation endpoints
+	mux.HandleFunc("GET /docs", s.handleSwaggerUI)
+	mux.HandleFunc("GET /docs/", s.handleSwaggerUI)
+	mux.HandleFunc("GET /docs/openapi.json", s.handleOpenAPISpec)
 	return mux
 }
 

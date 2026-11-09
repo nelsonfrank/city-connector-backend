@@ -1,0 +1,227 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Routing Service API",
+    "description": "Public Transport Journey Planning & Itinerary Computation using RAPTOR.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Default Gateway or Service Root"
+    }
+  ],
+  "paths": {
+    "/journey": {
+      "get": {
+        "summary": "Compute Journey Itineraries",
+        "description": "Calculates multi-modal transit itineraries between origin and destination based on RAPTOR over active GTFS static timetables.",
+        "operationId": "searchJourney",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "description": "Origin location as 'lat,lng' coordinate or namespaced stop ID (e.g. 'MBTA:place-sstat')",
+            "schema": {
+              "type": "string",
+              "example": "42.3563,-71.0624"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "description": "Destination location as 'lat,lng' coordinate or namespaced stop ID",
+            "schema": {
+              "type": "string",
+              "example": "42.3522,-71.0552"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Departure time (or arrival deadline if arriveBy=true) in ISO 8601 (RFC 3339) format. Defaults to current time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-11-09T08:15:00Z"
+            }
+          },
+          {
+            "name": "arriveBy",
+            "in": "query",
+            "required": false,
+            "description": "If true, treats 'time' as the desired arrival deadline and computes the latest viable departure using Backward RAPTOR.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "maxTransfers",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of vehicle transfers allowed (0 to 5). Defaults to 3.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5,
+              "default": 3
+            }
+          },
+          {
+            "name": "maxWalkMeters",
+            "in": "query",
+            "required": false,
+            "description": "Maximum walking radius in meters from origin and destination coordinates. Defaults to 800.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000,
+              "default": 800
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Journey options computed successfully. Returns an empty array if unreachable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters or unknown stop ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "invalid_location",
+                  "message": "unknown stop_id 'DEMO:999'"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Time requested is outside the static schedule horizon",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "time_out_of_range",
+                  "message": "requested date 2020-01-01 is outside schedule horizon [2026-11-01, 2026-12-31]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Timetable not yet loaded (e.g. initial pod startup)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "service_unavailable",
+                  "message": "timetable not loaded yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Location": {
+        "type": "object",
+        "properties": {
+          "stopId": { "type": "string", "example": "MBTA:place-sstat" },
+          "name": { "type": "string", "example": "South Station" },
+          "lat": { "type": "number", "format": "double", "example": 42.3522 },
+          "lng": { "type": "number", "format": "double", "example": -71.0552 }
+        }
+      },
+      "Leg": {
+        "type": "object",
+        "required": ["mode", "durationSeconds", "from", "to"],
+        "properties": {
+          "mode": { "type": "string", "enum": ["walk", "transit"], "example": "transit" },
+          "durationSeconds": { "type": "integer", "example": 300 },
+          "from": { "$ref": "#/components/schemas/Location" },
+          "to": { "$ref": "#/components/schemas/Location" },
+          "departAt": { "type": "string", "format": "date-time", "example": "2026-11-09T08:20:00Z" },
+          "arriveAt": { "type": "string", "format": "date-time", "example": "2026-11-09T08:25:00Z" },
+          "agencyId": { "type": "string", "example": "DEMO" },
+          "routeId": { "type": "string", "example": "DEMO:ROUTE_RED" },
+          "routeName": { "type": "string", "example": "Red Line" },
+          "tripId": { "type": "string", "example": "DEMO:TRIP_RED_1" },
+          "headsign": { "type": "string", "example": "Outbound" },
+          "delaySeconds": { "type": "integer", "example": 0 },
+          "stopSequence": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["DEMO:STOP_WEST", "DEMO:STOP_CENTRAL"]
+          },
+          "walkMeters": { "type": "integer", "example": 150 }
+        }
+      },
+      "Itinerary": {
+        "type": "object",
+        "required": ["id", "rank", "departAt", "arriveAt", "durationSeconds", "transfers", "walkMeters", "realtime", "legs"],
+        "properties": {
+          "id": { "type": "string", "example": "itin_a1b2c3d4" },
+          "rank": { "type": "string", "enum": ["fastest", "fewest_transfers", "least_walking", "alternative"], "example": "fastest" },
+          "departAt": { "type": "string", "format": "date-time", "example": "2026-11-09T08:17:00Z" },
+          "arriveAt": { "type": "string", "format": "date-time", "example": "2026-11-09T08:42:00Z" },
+          "durationSeconds": { "type": "integer", "example": 1500 },
+          "transfers": { "type": "integer", "example": 1 },
+          "walkMeters": { "type": "integer", "example": 320 },
+          "realtime": { "type": "boolean", "example": false },
+          "legs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Leg" }
+          }
+        }
+      },
+      "QuerySummary": {
+        "type": "object",
+        "properties": {
+          "from": { "$ref": "#/components/schemas/Location" },
+          "to": { "$ref": "#/components/schemas/Location" },
+          "departAt": { "type": "string", "format": "date-time", "example": "2026-11-09T08:15:00Z" }
+        }
+      },
+      "JourneyResponse": {
+        "type": "object",
+        "required": ["query", "itineraries"],
+        "properties": {
+          "query": { "$ref": "#/components/schemas/QuerySummary" },
+          "itineraries": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Itinerary" }
+          },
+          "message": { "type": "string", "example": "No reachable stops found within walking distance" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "example": "invalid_location" },
+          "message": { "type": "string", "example": "origin coordinates are invalid" }
+        }
+      }
+    }
+  }
+}
