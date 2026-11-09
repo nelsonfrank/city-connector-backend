@@ -17,7 +17,10 @@ import (
 
 	"github.com/city-connector-backend/routing/internal/api"
 	"github.com/city-connector-backend/routing/internal/config"
+	"github.com/city-connector-backend/routing/internal/eta"
 	"github.com/city-connector-backend/routing/internal/obs"
+	"github.com/city-connector-backend/routing/internal/planner"
+	"github.com/city-connector-backend/routing/internal/raptor"
 	"github.com/city-connector-backend/routing/internal/timetable"
 )
 
@@ -41,13 +44,30 @@ func run() error {
 
 	reg := obs.NewRegistry()
 	store := timetable.NewStore()
-	// TODO(M1/M5): start the timetable Watcher here; it loads the active feed
-	// version from cfg.Source and publishes it via store.Swap. Until then the
-	// service stays not-ready (/readyz=503, /journey=503) by design.
+
+	engine := raptor.NewEngine()
+	adjuster := eta.NewNoopAdjuster()
+	pl := planner.NewPlanner(cfg, engine, adjuster)
+
+	// If ROUTING_SOURCE=gtfszip and a path is provided, load immediately
+	if cfg.Source == config.SourceGTFSZip && cfg.GTFSPath != "" {
+		src := &timetable.GTFSZipSource{Path: cfg.GTFSPath}
+		bldr := timetable.NewBuilder(timetable.BuilderConfig{
+			WalkSpeedMPS:      cfg.WalkSpeedMPS,
+			MaxTransferMeters: cfg.MaxTransferMeters,
+			MinTransferSecs:   cfg.MinTransferSecs,
+		})
+		watcher := timetable.NewWatcher(src, bldr, store, cfg.TimetablePollInterval, log)
+		if err := watcher.StartInitialLoad(); err != nil {
+			log.Warn("initial gtfs load failed", "err", err)
+		} else {
+			go watcher.Run(ctx)
+		}
+	}
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", cfg.Port),
-		Handler:           api.NewServer(log, store, reg).Handler(),
+		Handler:           api.NewServer(cfg, log, store, pl, reg).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       60 * time.Second,

@@ -9,7 +9,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/city-connector-backend/routing/internal/config"
 	"github.com/city-connector-backend/routing/internal/obs"
+	"github.com/city-connector-backend/routing/internal/planner"
+	"github.com/city-connector-backend/routing/internal/raptor"
 	"github.com/city-connector-backend/routing/internal/timetable"
 )
 
@@ -17,7 +20,9 @@ func newTestServer(t *testing.T) (*timetable.Store, http.Handler) {
 	t.Helper()
 	store := timetable.NewStore()
 	log := slog.New(slog.NewJSONHandler(io.Discard, nil))
-	return store, NewServer(log, store, obs.NewRegistry()).Handler()
+	cfg, _ := config.Load()
+	pl := planner.NewPlanner(cfg, raptor.NewEngine(), nil)
+	return store, NewServer(cfg, log, store, pl, obs.NewRegistry()).Handler()
 }
 
 func do(h http.Handler, method, path string) *httptest.ResponseRecorder {
