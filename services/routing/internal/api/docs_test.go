@@ -32,3 +32,4 @@ func TestSwaggerUIEndpoints(t *testing.T) {
 		t.Errorf("openapi version = %v, want 3.0.3", spec["openapi"])
 	}
 }
+
